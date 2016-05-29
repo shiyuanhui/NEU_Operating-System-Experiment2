@@ -1,0 +1,169 @@
+/***************************************************************/
+/*         PROGRAM NAME:         PRODUCER_CONSUMER             */
+/*    This program simulates two processes, producer which     */
+/* continues  to produce message and  put it into a buffer     */
+/* [implemented by PIPE], and consumer which continues to get  */
+/* message from the buffer and use it.                         */
+/*    The program also demonstrates the synchronism between    */
+/* processes and uses of PIPE.                                 */
+/***************************************************************/
+#include  <stdio.h>
+#include   <stdlib.h>
+#include <time.h>
+#define PIPESIZE 8
+#define PRODUCER 0
+#define CONSUMER 1
+#define RUN      0    /* statu of process */
+#define WAIT     1    /* statu of process */
+#define READY    2    /* statu of process */
+#define NORMAL   0
+#define SLEEP    1
+#define AWAKE    2
+
+#include <stdio.h>
+
+  struct pcb { char *name;
+               int  statu;
+               int  time;
+               };  /* times of execution */
+  struct pipetype { char type;
+                    int  writeptr;
+                    int  readptr;
+                    struct pcb *pointp;     /* write wait point */
+                    struct pcb *pointc;  }; /* read wait point  */
+  int pipe[PIPESIZE];
+  struct pipetype pipetb;
+  struct pcb process[2];
+void prn(pcb p[], int pipe[], pipetype tb);
+int runc(pcb p[], int pipe[], pipetype *tb, int t);
+int runp(int out,pcb  p[], int pipe[], pipetype *tb, int t);
+void delay(int n)//假设n是指延迟的秒数
+
+{
+
+ clock_t start, end, deff;
+
+ deff=(clock_t)(CLOCKS_PER_SEC*n);
+
+ start=end=clock();
+
+ while( (end-start)<deff )end=clock();
+
+}
+int main()
+{ int output,ret,i;
+  char in[2];
+  //int runp(),runc(),prn();
+
+  pipetb.type = 'c'; pipetb.writeptr = 0; pipetb.readptr = 0;
+  pipetb.pointp = pipetb.pointc = NULL;
+  process[PRODUCER].name = "Producer\0";
+  process[CONSUMER].name = "Consumer\0";
+  process[PRODUCER].statu = process[CONSUMER].statu = READY;
+  process[PRODUCER].time = process[CONSUMER].time = 0;
+  output = 0;
+  printf("Now starting the program!\n");
+  srand((unsigned)time(NULL));// 随机函数发生器初始化
+
+int k;
+
+for(k=0;k<1000;k++){   //共产生10个随机数	,	通过不同随机数，来随机产生的是生产还											//是消费
+    k=rand()%10;//printf("%d",k)
+    delay(1);   // 延时1秒。函数delay(x)以毫秒为单位，1000ms = 1s
+    char choose[1];
+    in[0]='N';
+     while(in[0]=='N') {
+        if( k==1||k==3||k==5||k==2||k==8||k==6) {in[0]='p';//printf("ok\n");//默认生产比消费多																//概率大
+
+         }
+         else if(k==4||k==9||k==7){in[0]='c';//printf("ok\n");
+         }
+         else
+if(k==0){printf("input e exit,others continue\n");		//当产生e时，控制停止
+scanf("%s",choose);if(choose[0]=='e'){in[0]='e';}else {in[0]='p';}}
+         else in[0]='N';
+        //if(in[0]!='e'&&in[0]!='p'&&in[0]!='c') in[0]='N';
+        }
+ // printf("Press 'p' to run PRODUCER, press 'c' to run CONSUMER.\n");
+ //printf("Press 'e' to exit from the program.\n");
+     if(in[0]=='p'&&process[PRODUCER].statu==READY) {
+        output = (output+1)%100;
+        if((ret=runp(output,process,pipe,&pipetb,PRODUCER))==SLEEP)
+           pipetb.pointp = &process[PRODUCER];
+        if(ret==AWAKE) {
+           (pipetb.pointc)->statu=READY; pipetb.pointc=NULL;
+           runc(process,pipe,&pipetb,CONSUMER); }
+      }
+     if(in[0]=='c'&&process[CONSUMER].statu==READY) {
+        if((ret=runc(process,pipe,&pipetb,CONSUMER))==SLEEP)
+           pipetb.pointc = &process[CONSUMER];
+        if(ret==AWAKE) {
+           (pipetb.pointp)->statu=READY; pipetb.pointp=NULL;
+           runp(output,process,pipe,&pipetb,PRODUCER); }
+      }
+     if(in[0]=='p'&&process[PRODUCER].statu==WAIT)
+        printf("PRODUCER is waiting, can't be scheduled.\n");
+     if(in[0]=='c'&&process[CONSUMER].statu==WAIT)
+        printf("CONSUMER is waiting, can't be scheduled.\n");
+     if(in[0]=='e') exit(1);
+     prn(process,pipe,pipetb); in[0]='N'; }
+     return 0;
+ }
+ int runp(int out,pcb  p[], int pipe[], pipetype *tb, int t)  /* run producer */
+ { p[t].statu=RUN; printf("run PRODUCER. product %d     ",out);
+   if(tb->writeptr>=PIPESIZE) { p[t].statu=WAIT; return(SLEEP); }
+    int ct = 0;
+    for(ct;ct<8;ct++){
+    if(pipe[ct] == 0){
+        pipe[ct]=out;
+        tb->writeptr++;
+        //tb->readptr++;
+       // tb->readptr=(tb->readptr)%8;
+       p[t].time++;
+        break;
+    }}
+  // pipe[tb->writeptr]=out; tb->writeptr++; p[t].time++;p[t].cc=1;
+p[t].statu=READY; if((tb->pointc)!=NULL) return(AWAKE);
+   return(NORMAL);
+ }
+
+ int runc(pcb p[], int pipe[], pipetype *tb, int t)      /* run consumer */
+ { int c;
+   int ct = 0;
+   p[t].statu = RUN; printf("run CONSUMER. ");
+   if(tb->writeptr<=0) { p[t].statu=WAIT; return(SLEEP); }
+   for(ct;ct<8;ct++){
+    if(pipe[ct] != 0){
+        c = pipe[ct];
+        tb->writeptr--;
+        tb->readptr++;
+        tb->readptr=(tb->readptr)%8;
+        pipe[ct]=0;
+        break;
+    }
+
+   }
+   //c = pipe[tb->writeptr]; tb->writeptr--;tb->readptr++;tb->readptr=(tb->readptr)%8;
+  printf(" use %d      ",c);
+
+   p[t].time++; p[t].statu=READY;
+   if(tb->writeptr>0&&(tb->pointp)!=NULL) return(AWAKE);
+   return(NORMAL);
+ }
+
+ void prn(pcb p[], int pipe[], pipetype tb)
+ { int i;
+   printf("\n         "); for(i=0;i<PIPESIZE;i++) printf("------ ");
+   printf("\n        |");
+   for(i=0;i<PIPESIZE;i++)
+      if(pipe[i] != 0)
+        printf("  %2d  |",pipe[i]);
+        else printf("      |");
+   printf("\n         "); for(i=0;i<PIPESIZE;i++) printf("------ ");
+   printf("\nwriteptr = %d, readptr = %d,  ",tb.writeptr,tb.readptr);
+   if(p[PRODUCER].statu==WAIT) printf("PRODUCER wait ");
+     else printf("PRODUCER ready ");
+   if(p[CONSUMER].statu==WAIT) printf("CONSUMER wait ");
+     else printf("CONSUMER ready ");
+   printf("\n");
+ }
