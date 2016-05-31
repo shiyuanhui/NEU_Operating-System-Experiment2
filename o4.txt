@@ -1,0 +1,172 @@
+#include<iostream>
+using namespace std;
+#include<stdio.h>
+#include<sys/types.h>
+#include<stdlib.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<error.h>
+#include<wait.h>
+#include<unistd.h>
+
+int main()
+{
+	int i,p1,p2,fd[2];
+	int j,k;
+	int total_instruction=10;
+	int diseffect=0;
+	float min,miss;
+	char buf[50],s[50];
+	pipe(fd);
+	int Acess_Series[10];printf("randnumber:");
+srand( (unsigned)time( NULL ) );
+	for(j=0;j<10;j++)
+	{
+	k=rand()%5+1;				//产生十个随机数，存放到数组中
+	Acess_Series[j]=k;
+	
+	printf("%d",Acess_Series[j]);
+	
+	}
+	printf("\n");
+	struct one_frame{
+	int pag_no;
+	char flag;
+	};
+	struct one_frame M_frame[3];
+	struct one_frame t[3];
+	for(i=0;i<4;i++)						//构造内存数据结构，初始化
+	{
+		M_frame[i].pag_no=0;				//内存存储内容初始为0
+		M_frame[i].flag='k';				//内存空的标志位k，不空为n
+	}
+	printf("buff initialization:");
+	for(i=0;i<4;i++)
+	{
+		printf("%d,%c\t",M_frame[i].pag_no,M_frame[i].flag);
+	}
+	printf("\n");
+	while((p1=fork())==-1);							
+if(p1==0)													//子进程1
+//FIFO算法
+	{
+		
+		lockf(fd[1],1,0);
+		write(fd[1],Acess_Series,10);printf("type1:\n");
+		for(i=0;i<10;i++)								//循环嵌套
+		{
+		printf("%d\n",Acess_Series[i]);
+			for(j=0;j<4;j++)
+			{
+			//	printf("%d\n",j);
+				if(M_frame[j].flag=='k')
+				{
+					M_frame[j].pag_no=Acess_Series[i];M_frame[j].flag='n';break;
+				}
+				else if(M_frame[j].flag=='n')
+					if(M_frame[j].pag_no==Acess_Series[i])
+					{
+					printf("total_instruction=%d\n",total_instruction);//总页数
+					diseffect=diseffect+1;printf("effectnumber=%d\n",diseffect);//命中数
+					min=diseffect*1.0/total_instruction;printf("rate=%.1f\n",min);//命中率
+					printf("diseffectnumber=%d\n",total_instruction-diseffect);//缺页数
+					miss=(total_instruction*1.0-diseffect)*1.0/total_instruction;	//缺页率				
+					printf("diseffect=%.1f\n",miss);
+					break;
+					}
+					else
+					{
+					
+						
+						if(j==3)
+						{
+							
+							M_frame[0].pag_no=M_frame[1].pag_no;
+							M_frame[1].pag_no=M_frame[2].pag_no;
+							M_frame[2].pag_no=M_frame[3].pag_no;
+							M_frame[3].pag_no=Acess_Series[i];
+							break;
+						}
+						else  continue;
+						
+					}
+			
+			
+			}
+		for(k=0;k<4;k++)
+		{printf("| %d | ",M_frame[k].pag_no);}printf("\n");
+		}	
+		sleep(2);
+		printf("******************************\n");
+		lockf(fd[1],0,0);
+		exit(0);
+			
+	}
+	else
+	{
+		
+		while((p2=fork())==-1);
+		if(p2==0)											//子进程2，LRU算法
+		{
+			lockf(fd[1],1,0);
+			write(fd[1],Acess_Series,10);printf("type2:\n");
+	   	    for(i=0;i<10;i++)
+			{
+			printf("%d",Acess_Series[i]);
+			}
+ 			printf("\n");
+			//write(fd[1],Acess_Series,10);
+		    for(i=0;i<10;i++)
+			{
+			printf("%d\n",Acess_Series[i]);
+			for(j=0;j<4;j++)
+			{
+				if(M_frame[j].flag=='k')
+				{
+					M_frame[j].pag_no=Acess_Series[i];M_frame[j].flag='n';break;
+				}
+				else if(M_frame[j].flag=='n')
+				{	if(M_frame[j].pag_no==Acess_Series[i])
+					{
+					diseffect=diseffect+1;
+					printf("effect=%d\n",diseffect);
+					t[1].pag_no=M_frame[j].pag_no;
+					for(k=j;k<3;k++)
+					{			
+					M_frame[k].pag_no=M_frame[k+1].pag_no;}
+
+					M_frame[3].pag_no=t[1].pag_no;	
+					min=diseffect*1.0/total_instruction;printf("rate=%.1f\n",min);
+					printf("diseffectnumber=%d\n",total_instruction-diseffect);
+					miss=(total_instruction*1.0-diseffect)*1.0/total_instruction;					
+					printf("diseffect=%.1f\n",miss);
+					break;
+					}
+					else
+					{
+						if(j==3)	
+						{	M_frame[0].pag_no=M_frame[1].pag_no;
+							M_frame[1].pag_no=M_frame[2].pag_no;
+							M_frame[2].pag_no=M_frame[3].pag_no;
+							M_frame[3].pag_no=Acess_Series[i];
+							break;
+						}
+					else  continue;	
+					}
+				}		
+			}
+		for(k=0;k<4;k++)
+		{printf("| %d | ",M_frame[k].pag_no);}
+		printf("\n");
+		}	
+			sleep(2);
+			printf("*******************************************\n");
+			lockf(fd[1],0,0);
+			exit(0);
+
+		}
+		wait(0);	
+		wait(0);
+		exit(0);
+	}
+}
