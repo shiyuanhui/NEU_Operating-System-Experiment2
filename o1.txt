@@ -1,0 +1,301 @@
+（1）pcbinfo类：
+public class pcbinfo {
+	
+		private int num;//进程号
+		private String name;//进程名
+		/*
+		 * 构造函数
+		 */
+		public pcbinfo(int num, String name) {
+			super();
+			this.num = num;
+			this.name = name;
+		}
+		/*
+		 * 进程名和进程号的get和set方法
+		 */
+		public int getNum() {
+			return num;
+		}
+		public void setNum(int num) {
+			this.num = num;
+		}
+		public String getName() {
+			return name;
+		}
+		public void setName(String name) {
+			this.name = name;
+		}
+		
+		
+	
+}
+
+
+
+
+
+
+（2）pcb类：
+import java.util.ArrayList;
+import java.util.Scanner;
+
+
+public class pcb {
+	/*
+	 * 主函数
+	 */
+	
+	public static void main(String[] args) {
+		/*
+		 * 声明六个状态的队列
+		 */
+		 ArrayList<pcbinfo> New = new ArrayList<pcbinfo>();
+		 ArrayList<pcbinfo> Ready = new ArrayList<pcbinfo>();
+		 ArrayList<pcbinfo> Running = new ArrayList<pcbinfo>();
+		 ArrayList<pcbinfo> Blocket = new ArrayList<pcbinfo>();
+		 ArrayList<pcbinfo> Blocket_Suspend = new ArrayList<pcbinfo>();
+		 ArrayList<pcbinfo> Exit = new ArrayList<pcbinfo>();
+		Scanner in = new Scanner(System.in);
+		System.out.println("共六状态：New，Ready，Running，Blocket，Blocket_Suspend，Exit");
+		System.out.println("请输入进程数量：");
+		int count = in.nextInt();//count记录总的进程数量
+		/*
+		 * for循环让用户对每个进程输入进程名和初始状态，并将其加入到对应队列
+		 */
+		for(int i =0;i<count;i++){
+			System.out.print("请输入进程"+(i+1)+"的名字和初始状态：");
+			String proname = in.next();
+			String prostate = in.next();
+			if(prostate.equals("New")){
+				New.add(new pcbinfo((i+1), proname));
+			}
+			else if(prostate.equals("Ready")){
+				Ready.add(new pcbinfo((i+1), proname));
+			}
+			else if(prostate.equals("Running")){
+				Running.add(new pcbinfo((i+1), proname));
+			}
+			else if(prostate.equals("Blocket")){
+				Blocket.add(new pcbinfo((i+1), proname));
+			}
+			else if(prostate.equals("Blocket_Suspend")){
+				Blocket_Suspend.add(new pcbinfo((i+1), proname));
+			}
+			else if(prostate.equals("Exit")){
+				Exit.add(new pcbinfo((i+1), proname));
+			}
+			else {
+				System.out.println("Error:State is false");
+				System.exit(0);
+			}
+		}
+		/*
+		 * 提示各种状态转换对应的数字代号
+		 */
+		System.out.println("1.New---->Ready");
+		System.out.println("2.Ready--->Running");
+		System.out.println("3.Running--->Ready");
+		System.out.println("4.Running--->Exit");
+		System.out.println("5.Running--->Blocked");
+		System.out.println("6.Blocked--->Ready");
+		System.out.println("7.Blocked--->Blocked_Suspend");
+		System.out.println("8.Blocked_Suspend--->Ready");
+		/*
+		 * 死循环让用户能够不断地进行进程转换的模拟
+		 */
+		while(true){
+			int kind = in.nextInt();//用户输入转换代号
+			/*
+			 * 当1.New---->Ready时，让用户新创建一个进程，并将其加入到Ready队列,如果此时Running正好为空，则把Ready的首进程加入到Running队列
+			 */
+			if(kind == 1){
+				System.out.print("请输入进程"+(++count)+"的名字和初始状态：");
+				String proname = in.next();
+				Ready.add(new pcbinfo(count, proname));
+				if(Running.size() == 0){
+					Running.add(new pcbinfo(count, proname));
+					Ready.remove(0);
+				}
+			}
+			/*
+			 * 当2.Ready--->Running。如果Ready队列为空或者Running状态非空，则报错，否则把Ready状态的首进程加入到Running状态
+			 */
+			else if(kind == 2){
+				if(Ready.size() == 0)
+				{
+					System.out.println("Error:Ready is empty");
+				}
+				else if(Running.size() != 0){
+					System.out.println("Error:Running is not empty");
+				}
+				else{
+					int getnum = Ready.get(0).getNum();
+					String getname = Ready.get(0).getName();
+					Running.add(new pcbinfo(getnum, getname));
+					Ready.remove(0);
+				}
+			}
+			/*
+			 * 当3.Running--->Ready。如果Running为空，则报错，否则将Running状态的进程加入到Ready状态的队尾，将Ready状态队首进程加入到Running
+			 */
+			else if(kind == 3){
+				if(Running.size() == 0)
+				{
+					System.out.println("Error:Running is empty");
+				}
+				else {
+					int getnum = Running.get(0).getNum();
+					String getname = Running.get(0).getName();
+					Ready.add(new pcbinfo(getnum, getname));
+					Running.remove(0);
+					int getnum2 = Ready.get(0).getNum();
+					String getname2 = Ready.get(0).getName();
+					Running.add(new pcbinfo(getnum2, getname2));
+					Ready.remove(0);
+				}
+			}
+			/*
+			 * 当4.Running--->Exit。如果Running状态为空，则报错.否则，则将Running状态的进程加入到Exit队尾，如果此时Ready状态为非空，则把Ready队首进程加入到Running
+			 */
+			else if(kind == 4){
+				if(Running.size() == 0)
+				{
+					System.out.println("Error:Running is empty");
+				}
+				else{
+					int getnum = Running.get(0).getNum();
+					String getname = Running.get(0).getName();
+					Exit.add(new pcbinfo(getnum, getname));
+					Running.remove(0);
+					if(Ready.size() != 0){
+						int getnum2 = Ready.get(0).getNum();
+						String getname2 = Ready.get(0).getName();
+						Running.add(new pcbinfo(getnum2, getname2));
+						Ready.remove(0);
+					}
+				}
+			}
+			/*
+			 * 5.Running--->Blocked。如果Running为空，则报错。否则，如果Ready非空，则把Running进程加入到Blocked，Ready首进程加入到Running。如果Ready为空，则就把Running进程加入到Blocked。
+			 */
+			else if(kind == 5){
+				if(Running.size() == 0)
+				{
+					System.out.println("Error:Running is empty");
+				}
+				else if(Ready.size() != 0)
+				{
+					int getnum = Running.get(0).getNum();
+					String getname = Running.get(0).getName();
+					Blocket.add(new pcbinfo(getnum, getname));
+					Running.remove(0);
+					int getnum2 = Ready.get(0).getNum();
+					String getname2 = Ready.get(0).getName();
+					Running.add(new pcbinfo(getnum2, getname2));
+					Ready.remove(0);
+				}
+				else{
+					int getnum = Running.get(0).getNum();
+					String getname = Running.get(0).getName();
+					Blocket.add(new pcbinfo(getnum, getname));
+					Running.remove(0);
+				}
+			}
+			/*
+			 * 6.Blocked--->Ready。如果Blocked为空，则报错。否则，把Blocked队首进程加入到Ready队尾。如果此时Running为空，则把Ready首进程加入到Running。
+			 */
+			else if(kind == 6){
+				if(Blocket.size() == 0){
+					System.out.println("Error:Blocked is empty");
+				}
+				else if(Running.size() == 0){
+					int getnum = Blocket.get(0).getNum();
+					String getname = Blocket.get(0).getName();
+					Ready.add(new pcbinfo(getnum, getname));
+					Blocket.remove(0);
+					int getnum2 = Ready.get(0).getNum();
+					String getname2 = Ready.get(0).getName();
+					Running.add(new pcbinfo(getnum2, getname2));
+					Ready.remove(0);
+				}
+				else {
+					int getnum = Blocket.get(0).getNum();
+					String getname = Blocket.get(0).getName();
+					Ready.add(new pcbinfo(getnum, getname));
+					Blocket.remove(0);
+				}
+			}
+			/*
+			 * 7.Blocked--->Blocked_Suspend。如果Blocked为空，则报错，否则将Blocked队首进程加入到Blocked_Suspend队尾。
+			 */
+			else if(kind == 7){
+				if(Blocket.size() == 0){
+					System.out.println("Error:Blocked is empty");
+				}
+				else{
+				int getnum = Blocket.get(0).getNum();
+				String getname = Blocket.get(0).getName();
+				Blocket_Suspend.add(new pcbinfo(getnum, getname));
+				Blocket.remove(0);
+				}
+			}
+			/*
+			 * 8.Blocked_Suspend--->Ready。如果Blocked_Suspend为空，则报错。否则，将Blocked_Suspend队首进程加入到Ready队尾。如果此时Running为空，则把Ready队首进程加入到Running。
+			 */
+			else if(kind == 8){
+				if(Blocket_Suspend.size() == 0){
+					System.out.println("Error:Blocket_Suspend is empty");
+				}
+				else{
+				int getnum = Blocket_Suspend.get(0).getNum();
+				String getname = Blocket_Suspend.get(0).getName();
+				Ready.add(new pcbinfo(getnum, getname));
+				Blocket_Suspend.remove(0);
+				if(Running.size() == 0){
+					int getnum2 = Ready.get(0).getNum();
+					String getname2 = Ready.get(0).getName();
+					Running.add(new pcbinfo(getnum2, getname2));
+					Ready.remove(0);
+				}
+				}
+			}
+			/*
+			 * 如果输入了不合法的状态变化号，则报错
+			 */
+			else
+				System.out.println("输入错误变换号码");
+			/*
+			 * 最后输出各队列的进程名
+			 */
+			System.out.print("New state:");
+			for(int i = 0;i<New.size();i++)
+				System.out.print(New.get(i).getName());
+			System.out.println();
+			System.out.print("Ready state:");
+			for(int i = 0;i<Ready.size();i++)
+				System.out.print(Ready.get(i).getName());
+			System.out.println();
+			System.out.print("Running state:");
+			for(int i = 0;i<Running.size();i++)
+				System.out.print(Running.get(i).getName());
+			System.out.println();
+			System.out.print("Blocked state:");
+			for(int i = 0;i<Blocket.size();i++)
+				System.out.print(Blocket.get(i).getName());
+			System.out.println();
+			System.out.print("Blocked_Suspend state:");
+			for(int i = 0;i<Blocket_Suspend.size();i++)
+				System.out.print(Blocket_Suspend.get(i).getName());
+			System.out.println();
+			System.out.print("Exit state:");
+			for(int i = 0;i<Exit.size();i++)
+				System.out.print(Exit.get(i).getName());
+			System.out.println();
+		}
+		
+		
+		
+	}
+
+}
